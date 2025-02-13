@@ -47,7 +47,11 @@
                     'Accept': 'application/vnd.github.v3.raw'
                 }
             });
-             alert('没加载进来');
+    // 检查请求状态码
+            if (!response.ok) {
+                alert(`请求失败: ${response.status} ${response.statusText}`);
+                return;
+            }
             const json = await response.json();
             const data = JSON.parse(atob(json.content)).tableData;
             hot.loadData(data);
