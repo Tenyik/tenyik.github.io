@@ -47,6 +47,7 @@
                     'Accept': 'application/vnd.github.v3.raw'
                 }
             });
+             alert('没加载进来');
             const json = await response.json();
             const data = JSON.parse(atob(json.content)).tableData;
             hot.loadData(data);
