@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>共享可编辑表格</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #table {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>共享可编辑表格</h1>
+    <div id="table"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <script>
+        // 配置
+        const githubConfig = {
+            repo: 'https://github.com/Tenyik/TestForTable',  // 替换为你的仓库路径
+            token: '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',  // 替换为你的 Personal Access Token
+            filePath: 'data.json',
+            apiUrl: 'https://api.github.com'
+        };
+
+        // 初始化 Handsontable
+        const container = document.getElementById('table');
+        const hot = new Handsontable(container, {
+            data: [[]],
+            rowHeaders: true,
+            colHeaders: true,
+            contextMenu: true,
+            licenseKey: 'non-commercial-and-evaluation'
+        });
+
+        // 加载数据
+        async function loadData() {
+            const response = await fetch(`${githubConfig.apiUrl}/repos/${githubConfig.repo}/contents/${githubConfig.filePath}`, {
+                headers: {
+                    'Authorization': `token ${githubConfig.token}`,
+                    'Accept': 'application/vnd.github.v3.raw'
+                }
+            });
+            const json = await response.json();
+            const data = JSON.parse(atob(json.content)).tableData;
+            hot.loadData(data);
+        }
+
+        // 保存数据
+        async function saveData() {
+            const newData = JSON.stringify({ tableData: hot.getData() });
+
+            // 获取文件 SHA 值
+            const getFileSha = await fetch(`${githubConfig.apiUrl}/repos/${githubConfig.repo}/contents/${githubConfig.filePath}`, {
+                headers: {
+                    'Authorization': `token ${githubConfig.token}`
+                }
+            });
+            const fileData = await getFileSha.json();
+            const sha = fileData.sha;
+
+            // 更新文件内容
+            const response = await fetch(`${githubConfig.apiUrl}/repos/${githubConfig.repo}/contents/${githubConfig.filePath}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `token ${githubConfig.token}`
+                },
+                body: JSON.stringify({
+                    message: '更新表格数据',
+                    content: btoa(newData),
+                    sha: sha
+                })
+            });
+
+            if (response.ok) {
+                alert('数据已保存！');
+            } else {
+                alert('保存失败！');
+            }
+        }
+
+        // 注册保存事件
+        hot.addHook('afterChange', saveData);
+
+        // 初次加载数据
+        loadData();
+    </script>
+</body>
+</html>
